@@ -63,21 +63,36 @@ const Login = () => {
     const handleRegister = async (e) => {
         e.preventDefault();
 
+        const apiUrl = 'https://665821525c361705264700c9.mockapi.io/api/Users/users';
+        const userDetailsUrl = 'https://665821525c361705264700c9.mockapi.io/api/Users/userDetails';
+
         try {
-            const existingUser = await usersApi.loginUser(userName, password);
-            
-            if (existingUser) {
+            const response = await fetch(apiUrl);
+            const users = await response.json();
+
+            const userExists = users.some(u => u.userName === userName);
+
+            if (userExists) {
                 setMessage('USERNAME ALREADY EXISTS');
                 setMessageType('error');
                 return;
             }
 
             // Thêm người dùng mới
-            await registerApi.registerUser(userName, password);
+            const newUser = { userName, password };
+            await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-type': 'application/json' },
+                body: JSON.stringify(newUser)
+            });
 
             // Thêm thông tin chi tiết người dùng
             const userDetails = { name, email, phone, userName };
-            await registerApi.addUserDetails(userDetails);
+            await fetch(userDetailsUrl, {
+                method: 'POST',
+                headers: { 'Content-type': 'application/json' },
+                body: JSON.stringify(userDetails)
+            });
 
             setMessage('SIGNUP SUCCESSFULLY');
             setMessageType('success');
