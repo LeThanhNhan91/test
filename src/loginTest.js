@@ -3,6 +3,7 @@ import './loginTest.css';
 import { FaGoogle, FaFacebookF } from "react-icons/fa";
 import usersApi from './api/usersApi';
 import registerApi from './api/registerApi';
+import { validateName, validatePhone, validateEmail, validateUserName } from "./formValidation";
 
 const Login = () => {
     const [userName, setUserName] = useState('');
@@ -13,6 +14,11 @@ const Login = () => {
     const [isLogin, setIsLogin] = useState(true); // Trạng thái đăng nhập hoặc đăng ký
     const [message, setMessage] = useState('');
     const [messageType, setMessageType] = useState(''); // Loại thông báo: 'success' hoặc 'error'
+
+    const [nameValidation, setNameValidation] = useState({ isValid: true, message: '' });
+    const [phoneValidation, setPhoneValidation] = useState({ isValid: true, message: '' });
+    const [emailValidation, setEmailValidation] = useState({ isValid: true, message: '' });
+    const [userNameValidation, setUserNameValidation] = useState({ isValid: true, message: '' });
 
     // Sử dụng useEffect để quản lý việc thêm và gỡ bỏ các event listener
     useEffect(() => {
@@ -62,6 +68,22 @@ const Login = () => {
     // Hàm xử lý đăng ký
     const handleRegister = async (e) => {
         e.preventDefault();
+
+        const nameValidation = validateName(name);
+        const phoneValidation = validatePhone(phone);
+        const emailValidation = validateEmail(email);
+        const userNameValidation = validateUserName(userName);
+
+        setNameValidation(nameValidation);
+        setPhoneValidation(phoneValidation);
+        setEmailValidation(emailValidation);
+        setUserNameValidation(userNameValidation);
+
+        if (!nameValidation.isValid || !phoneValidation.isValid || !emailValidation.isValid || !userNameValidation.isValid) {
+            setMessage('Please correct the errors and try again');
+            setMessageType('error');
+            return;
+        }
 
         const apiUrl = 'https://665821525c361705264700c9.mockapi.io/api/Users/users';
         const userDetailsUrl = 'https://665821525c361705264700c9.mockapi.io/api/Users/userDetails';
@@ -149,28 +171,36 @@ const Login = () => {
                                 placeholder="Name"
                                 onChange={(e) => setName(e.target.value)}
                                 required
+                                className={nameValidation.isValid ? '' : 'error-input'}
                             />
+                            
                             <input
                                 type="number"
                                 value={phone}
                                 placeholder="Phone"
                                 onChange={(e) => setPhone(e.target.value)}
                                 required
+                                className={phoneValidation.isValid ? '' : 'error-input'}
                             />
+                            
                             <input
                                 type="email"
                                 value={email}
                                 placeholder="Email"
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
+                                className={emailValidation.isValid ? '' : 'error-input'}
                             />
+                            
                             <input
                                 type="text"
                                 value={userName}
                                 placeholder="UserName"
                                 onChange={(e) => setUserName(e.target.value)}
                                 required
+                                className={userNameValidation.isValid ? '' : 'error-input'}
                             />
+                            
                             <input
                                 type="password"
                                 value={password}
@@ -179,6 +209,7 @@ const Login = () => {
                                 required
                             />
                             <button type="submit" className="signUpBtn">Sign Up</button>
+                            {message && <p className={messageType}>{message}</p>}
                         </form>
                     </div>
                 )
