@@ -1,34 +1,31 @@
 import React, { useState, useEffect } from "react";
 import './loginTest.css';
 import { FaGoogle, FaFacebookF } from "react-icons/fa";
-import usersApi from './api/usersApi';
-import registerApi from './api/registerApi';
-import { validateName, validatePhone, validateEmail, validateUserName } from "./formValidation";
+import { loginApi } from './api/usersApi'; 
+import { registerApi } from './api/registerApi'; // Import the register API
+import { validateFullName, validateEmail, validateConfirmPassword } from "./formValidation";
+import { toast } from 'react-toastify';
 
 const Login = () => {
-    const [userName, setUserName] = useState('');
     const [password, setPassword] = useState('');
-    const [name, setName] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [fullName, setFullName] = useState('');
     const [email, setEmail] = useState('');
-    const [phone, setPhone] = useState('');
-    const [isLogin, setIsLogin] = useState(true); // Trạng thái đăng nhập hoặc đăng ký
+    const [isLogin, setIsLogin] = useState(true); 
     const [message, setMessage] = useState('');
-    const [messageType, setMessageType] = useState(''); // Loại thông báo: 'success' hoặc 'error'
+    const [messageType, setMessageType] = useState(''); 
+    const [loading, setLoading] = useState(false); 
 
-    const [nameValidation, setNameValidation] = useState({ isValid: true, message: '' });
-    const [phoneValidation, setPhoneValidation] = useState({ isValid: true, message: '' });
+    const [fullNameValidation, setFullNameValidation] = useState({ isValid: true, message: '' });
     const [emailValidation, setEmailValidation] = useState({ isValid: true, message: '' });
-    const [userNameValidation, setUserNameValidation] = useState({ isValid: true, message: '' });
+    const [confirmPasswordValidation, setConfirmPasswordValidation] = useState({ isValid: true, message: '' });
 
-    // Sử dụng useEffect để quản lý việc thêm và gỡ bỏ các event listener
     useEffect(() => {
         const container = document.getElementById('container');
         const registerBtn = document.getElementById('register');
         const loginBtn = document.getElementById('login');
 
-        // Hàm thêm class "active" cho container
         const addActiveClass = () => container.classList.add("active");
-        // Hàm gỡ class "active" từ container
         const removeActiveClass = () => container.classList.remove("active");
 
         if (registerBtn && loginBtn) {
@@ -36,7 +33,6 @@ const Login = () => {
             loginBtn.addEventListener('click', removeActiveClass);
         }
 
-        // Cleanup: Gỡ bỏ event listener khi component bị unmount
         return () => {
             if (registerBtn && loginBtn) {
                 registerBtn.removeEventListener('click', addActiveClass);
@@ -45,181 +41,163 @@ const Login = () => {
         };
     }, []);
 
-    // Hàm xử lý đăng nhập
     const handleLogin = async (e) => {
         e.preventDefault();
 
-        try {
-            const user = await usersApi.loginUser(userName, password);
+        if (!email || !password) {
+            toast.error("Email/Password is required!");
+            return;
+        }
 
-            if (user) {
-                setMessage('LOGIN SUCCESSFULLY');
-                setMessageType('success');
-            } else {
-                setMessage('LOGIN FAILED, TRY AGAIN');
-                setMessageType('error');
+        setLoading(true);
+        try {
+            const res = await loginApi(email, password);
+            if (res && res.data.token) {
+                localStorage.setItem("token", res.data.token);
+                toast.success("Login successful!");
+            } else if (res && res.status === 400) {
+                toast.error(res.data.error);
             }
         } catch (error) {
-            setMessage('LOGIN FAILED, TRY AGAIN');
-            setMessageType('error');
+            toast.error("Login failed!");
+        } finally {
+            setLoading(false);
         }
-    }
+    };
 
-    // Hàm xử lý đăng ký
     const handleRegister = async (e) => {
         e.preventDefault();
 
-        const nameValidation = validateName(name);
-        const phoneValidation = validatePhone(phone);
+        const fullNameValidation = validateFullName(fullName);
         const emailValidation = validateEmail(email);
-        const userNameValidation = validateUserName(userName);
+        const confirmPasswordValidation = validateConfirmPassword(password, confirmPassword);
 
-        setNameValidation(nameValidation);
-        setPhoneValidation(phoneValidation);
+        setFullNameValidation(fullNameValidation);
         setEmailValidation(emailValidation);
-        setUserNameValidation(userNameValidation);
+        setConfirmPasswordValidation(confirmPasswordValidation);
 
-        if (!nameValidation.isValid || !phoneValidation.isValid || !emailValidation.isValid || !userNameValidation.isValid) {
+        if (!fullNameValidation.isValid || !emailValidation.isValid || !confirmPasswordValidation.isValid) {
             setMessage('Please correct the errors and try again');
             setMessageType('error');
             return;
         }
 
-        const apiUrl = 'https://665821525c361705264700c9.mockapi.io/api/Users/users';
-        const userDetailsUrl = 'https://665821525c361705264700c9.mockapi.io/api/Users/userDetails';
-
+        setLoading(true);
         try {
-            const response = await fetch(userDetailsUrl);
-            const users = await response.json();
-
-            const userExists = users.some(u => u.userName === userName);
-            const emailExists = users.some(u =>  u.email === email)
-
-            if (userExists || emailExists) {
-                setMessage('USERNAME OR EMAIL ALREADY EXISTS');
+            const response = await registerApi(fullName, email, password, confirmPassword);
+            if (response.status === 201) {
+                setMessage('SIGNUP SUCCESSFULLY');
+                setMessageType('success');
+                setIsLogin(true); 
+            } else {
+                setMessage('SIGNUP FAILED');
                 setMessageType('error');
-                return;
             }
-
-            // Thêm người dùng mới
-            const newUser = { userName, password };
-            await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-type': 'application/json' },
-                body: JSON.stringify(newUser)
-            });
-
-            // Thêm thông tin chi tiết người dùng
-            const userDetails = { name, email, phone, userName };
-            await fetch(userDetailsUrl, {
-                method: 'POST',
-                headers: { 'Content-type': 'application/json' },
-                body: JSON.stringify(userDetails)
-            });
-
-            setMessage('SIGNUP SUCCESSFULLY');
-            setMessageType('success');
-            setIsLogin(true); // Chuyển về trang đăng nhập
         } catch (error) {
-            setMessage('SIGNUP FAILED');
-            setMessageType('error');
+            if (error.response) {
+                // Server responded with a status other than 200 range
+                setMessage(error.response.data.message || 'SIGNUP FAILED');
+                setMessageType('error');
+            } else if (error.request) {
+                // Request was made but no response received
+                setMessage('No response from server');
+                setMessageType('error');
+            } else {
+                // Something else caused the error
+                setMessage(error.message);
+                setMessageType('error');
+            }
+        } finally {
+            setLoading(false);
         }
-    }
+    };
 
     return (
-        <div className={`container ${!isLogin ? 'active' : ''}`} id="container" >
-            {
-                isLogin ? (
-                    <div className="form-container sign-in">
-                        <form onSubmit={handleLogin}>
-                            <h1>LOG IN</h1>
-                            <div className="social-icons">
-                                <a href="#" className="icon" style={{color: "red"}}><FaGoogle /></a>
-                                <a href="#" className="icon" style={{color: "blue"}}><FaFacebookF /></a>
-                            </div>
-                            <span>or use your account for login</span>
-                            <input
-                                type="text"
-                                value={userName}
-                                placeholder="UserName"
-                                onChange={(e) => setUserName(e.target.value)}
-                                required
-                            />
-                            <input
-                                type="password"
-                                value={password}
-                                placeholder="Password"
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                            />
-                            <a href="#">Forgot Password</a>
-                            <button type="submit" className="signInBtn">Sign In</button>
-                            {message && <p className={messageType}>{message}</p>}
-                        </form>
-                    </div>
-                ) : (
-                    <div className="form-container sign-up">
-                        <form onSubmit={handleRegister}>
-                            <h1>Create Account</h1>
-                            <div className="social-icons">
-                                <a href="#" className="icon" style={{color: "red"}}><FaGoogle /></a>
-                                <a href="#" className="icon" style={{color: "blue"}}><FaFacebookF /></a>
-                            </div>
-                            <span>or use your email for registration</span>
-                            <input
-                                type="text"
-                                value={name}
-                                placeholder="Name"
-                                onChange={(e) => setName(e.target.value)}
-                                required
-                                className={nameValidation.isValid ? '' : 'error-input'}
-                            />
-                            {nameValidation.message && <p className="errorVal">{nameValidation.message}</p>}
-                            <input
-                                type="number"
-                                value={phone}
-                                placeholder="Phone"
-                                onChange={(e) => setPhone(e.target.value)}
-                                required
-                                className={phoneValidation.isValid ? '' : 'error-input'}
-                            />
-                            {phoneValidation.message && <p className="errorVal">{phoneValidation.message}</p>}
-                            <input
-                                type="text"
-                                value={email}
-                                placeholder="Email"
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                                className={emailValidation.isValid ? '' : 'error-input'}
-                            />
-                            {emailValidation.message && <p className="errorVal">{emailValidation.message}</p>}
-                            <input
-                                type="text"
-                                value={userName}
-                                placeholder="UserName"
-                                onChange={(e) => setUserName(e.target.value)}
-                                required
-                                className={userNameValidation.isValid ? '' : 'error-input'}
-                            />
-                            {userNameValidation.message && <p className="errorVal">{userNameValidation.message}</p>}
-                            <input
-                                type="password"
-                                value={password}
-                                placeholder="Password"
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                            />
-                            <button type="submit" className="signUpBtn">Sign Up</button>
-                            {message && <p className={messageType}>{message}</p>}
-                        </form>
-                    </div>
-                )
-            }
+        <div className={`container ${!isLogin ? 'active' : ''}`} id="container">
+            {isLogin ? (
+                <div className="form-container sign-in">
+                    <form onSubmit={handleLogin}>
+                        <h1>LOG IN</h1>
+                        <div className="social-icons">
+                            <a href="#" className="icon" style={{ color: "red" }}><FaGoogle /></a>
+                            <a href="#" className="icon" style={{ color: "blue" }}><FaFacebookF /></a>
+                        </div>
+                        <span>or use your account for login</span>
+                        <input
+                            type="text"
+                            value={email}
+                            placeholder="Email"
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                        />
+                        <input
+                            type="password"
+                            value={password}
+                            placeholder="Password"
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                        />
+                        <a href="#">Forgot Password</a>
+                        <button type="submit" className="signInBtn">
+                            {loading && <i className="fas fa-sync fa-spin"></i>}
+                            Sign In
+                        </button>
+                        {message && <p className={messageType}>{message}</p>}
+                    </form>
+                </div>
+            ) : (
+                <div className="form-container sign-up">
+                    <form onSubmit={handleRegister}>
+                        <h1>Create Account</h1>
+                        <div className="social-icons">
+                            <a href="#" className="icon" style={{ color: "red" }}><FaGoogle /></a>
+                            <a href="#" className="icon" style={{ color: "blue" }}><FaFacebookF /></a>
+                        </div>
+                        <span>or use your email for registration</span>
+                        <input
+                            type="text"
+                            value={fullName}
+                            placeholder="FullName"
+                            onChange={(e) => setFullName(e.target.value)}
+                            required
+                            className={fullNameValidation.isValid ? '' : 'error-input'}
+                        />
+                        {fullNameValidation.message && <p className="errorVal">{fullNameValidation.message}</p>}
+                        <input
+                            type="text"
+                            value={email}
+                            placeholder="Email"
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                            className={emailValidation.isValid ? '' : 'error-input'}
+                        />
+                        {emailValidation.message && <p className="errorVal">{emailValidation.message}</p>}
+                        <input
+                            type="password"
+                            value={password}
+                            placeholder="Password"
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                        />
+                        <input
+                            type="password"
+                            value={confirmPassword}
+                            placeholder="Confirm Password"
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            required
+                            className={confirmPasswordValidation.isValid ? '' : 'error-input'}
+                        />
+                        {confirmPasswordValidation.message && <p className="errorVal">{confirmPasswordValidation.message}</p>}
+                        <button type="submit" className="signUpBtn">Sign Up</button>
+                        {message && <p className={messageType}>{message}</p>}
+                    </form>
+                </div>
+            )}
             <div className="toggle-container">
                 <div className="toggle">
                     <div className="toggle-panel toggle-left">
                         <h1>badminton is joy</h1>
-                        <p>Enter your userName password to schedule now!!</p>
+                        <p>Enter your userFullName password to schedule now!!</p>
                         <button className="hidden" id="login" onClick={() => setIsLogin(true)}>Sign In</button>
                     </div>
                     <div className="toggle-panel toggle-right">
