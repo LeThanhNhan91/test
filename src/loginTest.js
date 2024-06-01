@@ -89,13 +89,14 @@ const Login = () => {
         const userDetailsUrl = 'https://665821525c361705264700c9.mockapi.io/api/Users/userDetails';
 
         try {
-            const response = await fetch(apiUrl);
+            const response = await fetch(userDetailsUrl);
             const users = await response.json();
 
             const userExists = users.some(u => u.userName === userName);
+            const emailExists = users.some(u =>  u.email === email)
 
-            if (userExists) {
-                setMessage('USERNAME ALREADY EXISTS');
+            if (userExists || emailExists) {
+                setMessage('USERNAME OR EMAIL ALREADY EXISTS');
                 setMessageType('error');
                 return;
             }
@@ -173,7 +174,7 @@ const Login = () => {
                                 required
                                 className={nameValidation.isValid ? '' : 'error-input'}
                             />
-                            
+                            {nameValidation.message && <p className="errorVal">{nameValidation.message}</p>}
                             <input
                                 type="number"
                                 value={phone}
@@ -182,16 +183,16 @@ const Login = () => {
                                 required
                                 className={phoneValidation.isValid ? '' : 'error-input'}
                             />
-                            
+                            {phoneValidation.message && <p className="errorVal">{phoneValidation.message}</p>}
                             <input
-                                type="email"
+                                type="text"
                                 value={email}
                                 placeholder="Email"
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
                                 className={emailValidation.isValid ? '' : 'error-input'}
                             />
-                            
+                            {emailValidation.message && <p className="errorVal">{emailValidation.message}</p>}
                             <input
                                 type="text"
                                 value={userName}
@@ -200,7 +201,7 @@ const Login = () => {
                                 required
                                 className={userNameValidation.isValid ? '' : 'error-input'}
                             />
-                            
+                            {userNameValidation.message && <p className="errorVal">{userNameValidation.message}</p>}
                             <input
                                 type="password"
                                 value={password}

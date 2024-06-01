@@ -27,7 +27,7 @@ body {
     min-height: 600px;
 }
 
-.container p {
+.toggle p {
     font-size: 14px;
     line-height: 20px;
     letter-spacing: 0.3px;
@@ -240,9 +240,10 @@ body {
     box-shadow: 1px 1px 5px 0 red;
 }
 
-.container .error {
+.container .errorVal {
     color: red;
-    font-size: 3px;
+    font-size: 10px;
+    font-weight: 600;
     margin: 0;
 }
 
