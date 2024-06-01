@@ -9,6 +9,16 @@ export const validateEmail = (email) => {
     return { isValid: false, message: 'Wrong Email format! (abc@gmail.com)' };
 };
 
+export const validatePassword = (password) => {
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\W).{6,}$/;
+
+    if (!passwordRegex.test(password)) {
+        return { isValid: false, message: 'At least 6 characters, include "A, a, @,.."' };
+    }
+
+    return { isValid: true, message: '' };
+};
+
 export const validateConfirmPassword = (password, confirmPassword) => {
     if (password === confirmPassword) return { isValid: true, message: '' };
     return { isValid: false, message: 'Does not match with Password!' };

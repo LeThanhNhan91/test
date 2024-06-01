@@ -2,9 +2,11 @@ import React, { useState, useEffect } from "react";
 import './loginTest.css';
 import { FaGoogle, FaFacebookF } from "react-icons/fa";
 import { loginApi } from './api/usersApi'; 
-import { registerApi } from './api/registerApi'; // Import the register API
-import { validateFullName, validateEmail, validateConfirmPassword } from "./formValidation";
+import { registerApi } from './api/registerApi';
+import { validateFullName, validateEmail, validatePassword, validateConfirmPassword } from "./formValidation";
+import axios from "axios";
 import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const Login = () => {
     const [password, setPassword] = useState('');
@@ -18,6 +20,7 @@ const Login = () => {
 
     const [fullNameValidation, setFullNameValidation] = useState({ isValid: true, message: '' });
     const [emailValidation, setEmailValidation] = useState({ isValid: true, message: '' });
+    const [passwordValidation, setPasswordValidation] = useState({ isValid: true, message: '' });
     const [confirmPasswordValidation, setConfirmPasswordValidation] = useState({ isValid: true, message: '' });
 
     useEffect(() => {
@@ -70,42 +73,40 @@ const Login = () => {
 
         const fullNameValidation = validateFullName(fullName);
         const emailValidation = validateEmail(email);
+        const passwordValidation = validatePassword(password);
         const confirmPasswordValidation = validateConfirmPassword(password, confirmPassword);
 
         setFullNameValidation(fullNameValidation);
         setEmailValidation(emailValidation);
+        setPasswordValidation(passwordValidation);
         setConfirmPasswordValidation(confirmPasswordValidation);
 
-        if (!fullNameValidation.isValid || !emailValidation.isValid || !confirmPasswordValidation.isValid) {
-            setMessage('Please correct the errors and try again');
+        if (!fullNameValidation.isValid || !emailValidation.isValid || !passwordValidation.isValid || !confirmPasswordValidation.isValid) {
+            setMessage('Please try again');
             setMessageType('error');
             return;
         }
 
         setLoading(true);
+
         try {
-            const response = await registerApi(fullName, email, password, confirmPassword);
-            if (response.status === 201) {
-                setMessage('SIGNUP SUCCESSFULLY');
-                setMessageType('success');
-                setIsLogin(true); 
-            } else {
-                setMessage('SIGNUP FAILED');
-                setMessageType('error');
-            }
+            const response = await axios.post("https://courtcaller.azurewebsites.net/api/authentication/register", {
+                fullName: fullName,
+                email: email,
+                password: password,
+                confirmPassword: confirmPassword
+            });
+            toast.success("Registration successful!");
+            setMessage('SIGN UP SUCCESSFULLY - LOG IN NOW !');
+            setMessageType('success');
+            setIsLogin(true);
         } catch (error) {
             if (error.response) {
-                // Server responded with a status other than 200 range
-                setMessage(error.response.data.message || 'SIGNUP FAILED');
-                setMessageType('error');
+                toast.error(error.response.data.message || 'Registration failed');
             } else if (error.request) {
-                // Request was made but no response received
-                setMessage('No response from server');
-                setMessageType('error');
+                toast.error('No response from server');
             } else {
-                // Something else caused the error
-                setMessage(error.message);
-                setMessageType('error');
+                toast.error(error.message);
             }
         } finally {
             setLoading(false);
@@ -178,7 +179,9 @@ const Login = () => {
                             placeholder="Password"
                             onChange={(e) => setPassword(e.target.value)}
                             required
+                            className={passwordValidation.isValid ? '' : 'error-input'}
                         />
+                        {passwordValidation.message && <p className="errorVal">{passwordValidation.message}</p>}
                         <input
                             type="password"
                             value={confirmPassword}
@@ -188,7 +191,10 @@ const Login = () => {
                             className={confirmPasswordValidation.isValid ? '' : 'error-input'}
                         />
                         {confirmPasswordValidation.message && <p className="errorVal">{confirmPasswordValidation.message}</p>}
-                        <button type="submit" className="signUpBtn">Sign Up</button>
+                        <button type="submit" className="signUpBtn">
+                            {loading && <i className="fas fa-sync fa-spin"></i>}
+                            Sign Up
+                        </button>
                         {message && <p className={messageType}>{message}</p>}
                     </form>
                 </div>
