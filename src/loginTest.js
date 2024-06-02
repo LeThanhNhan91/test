@@ -7,7 +7,8 @@ import { validateFullName, validateEmail, validatePassword, validateConfirmPassw
 import axios from "axios";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { GoogleLogin } from '@react-oauth/google';
+import { GoogleLogin, useGoogleLogin } from '@react-oauth/google';
+import { jwtDecode } from "jwt-decode";
 
 const Login = () => {
     const [password, setPassword] = useState('');
@@ -114,7 +115,28 @@ const Login = () => {
         }
     };
 
-    
+    const loginGoogle = useGoogleLogin({
+        onSuccess: async (response) => {
+            try {
+                const res = await axios.post(
+                    "https://courtcaller.azurewebsites.net/api/authentication/google-login",
+                    null,
+                    {
+                        headers: {
+                            tokenGoogle: `Bearer ${response.access_token}`,
+                        },
+                    }
+                )
+                if(res.status === 200){
+                    console.log(res)
+                    toast.success('Login successfully')
+                }
+            } catch (error) {
+                console.log(error)
+                toast.error('Login Failed')
+            }
+        }
+    })
 
     return (
         <div className={`container ${!isLogin ? 'active' : ''}`} id="container">
@@ -123,15 +145,7 @@ const Login = () => {
                     <form onSubmit={handleLogin}>
                         <h1>LOG IN</h1>
                         <div className="social-icons">
-                        <GoogleLogin
-  onSuccess={credentialResponse => {
-    console.log(credentialResponse);
-    toast.success('Login successfully')
-  }}
-  onError={() => {
-    console.log('Login Failed');
-  }}
-/>;
+                            <a href="#" onClick={() => loginGoogle()} className="icon" style={{ color: "red" }}><FaGoogle /></a>
                             <a href="#" className="icon" style={{ color: "blue" }}><FaFacebookF /></a>
                         </div>
                         <span>or use your account for login</span>
