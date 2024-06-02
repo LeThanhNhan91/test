@@ -2,6 +2,7 @@ import axios from "axios";
 
 const instance = axios.create({
     baseURL: 'https://courtcaller.azurewebsites.net/api'
+    // baseURL: 'https://reqres.in'
 })
 
 // Add a response interceptor

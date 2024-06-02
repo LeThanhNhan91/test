@@ -1,16 +1,24 @@
 // App.js or a similar file
 import React from 'react';
-import { ToastContainer } from 'react-toastify';
+import { Slide, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import Login from './Login'; // Adjust the path as needed
+import Login from './loginTest.js'; // Adjust the path as needed
 
 function App() {
   return (
-    <div className="App">
-      <ToastContainer />
+    <>
+      <ToastContainer 
+      transition={Slide}
+      autoClose = {1500}
+      newestOnTop={true}
+      pauseOnHover = {true}
+      pauseOnFocusLoss = {false}
+      limit={5}
+      />
       <Login />
-    </div>
+    </>
   );
 }
 
 export default App;
+

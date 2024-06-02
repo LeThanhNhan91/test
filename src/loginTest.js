@@ -7,6 +7,7 @@ import { validateFullName, validateEmail, validatePassword, validateConfirmPassw
 import axios from "axios";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { GoogleLogin } from '@react-oauth/google';
 
 const Login = () => {
     const [password, setPassword] = useState('');
@@ -55,11 +56,11 @@ const Login = () => {
         setLoading(true);
         try {
             const res = await loginApi(email, password);
-            if (res && res.data.token) {
-                localStorage.setItem("token", res.data.token);
+            if (res && res.token) {
+                localStorage.setItem("token", res.token);
                 toast.success("Login successful!");
             } else if (res && res.status === 400) {
-                toast.error(res.data.error);
+                toast.error(res.error);
             }
         } catch (error) {
             toast.error("Login failed!");
@@ -113,6 +114,8 @@ const Login = () => {
         }
     };
 
+    
+
     return (
         <div className={`container ${!isLogin ? 'active' : ''}`} id="container">
             {isLogin ? (
@@ -120,7 +123,15 @@ const Login = () => {
                     <form onSubmit={handleLogin}>
                         <h1>LOG IN</h1>
                         <div className="social-icons">
-                            <a href="#" className="icon" style={{ color: "red" }}><FaGoogle /></a>
+                        <GoogleLogin
+  onSuccess={credentialResponse => {
+    console.log(credentialResponse);
+    toast.success('Login successfully')
+  }}
+  onError={() => {
+    console.log('Login Failed');
+  }}
+/>;
                             <a href="#" className="icon" style={{ color: "blue" }}><FaFacebookF /></a>
                         </div>
                         <span>or use your account for login</span>
