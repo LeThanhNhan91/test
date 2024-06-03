@@ -7,8 +7,7 @@ import { validateFullName, validateEmail, validatePassword, validateConfirmPassw
 import axios from "axios";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { GoogleLogin, useGoogleLogin } from '@react-oauth/google';
-import { jwtDecode } from "jwt-decode";
+import { GoogleLogin } from '@react-oauth/google';
 
 const Login = () => {
     const [password, setPassword] = useState('');
@@ -115,28 +114,36 @@ const Login = () => {
         }
     };
 
-    const loginGoogle = useGoogleLogin({
-        onSuccess: async (response) => {
-            try {
-                const res = await axios.post(
-                    "https://courtcaller.azurewebsites.net/api/authentication/google-login",
-                    null,
-                    {
-                        headers: {
-                            tokenGoogle: `Bearer ${response.access_token}`,
-                        },
-                    }
-                )
-                if(res.status === 200){
-                    console.log(res)
-                    toast.success('Login successfully')
-                }
-            } catch (error) {
-                console.log(error)
+    const loginGoogle = async (response) => {
+        const token = response.credential; // Token này là một phần của response trả về từ Google sau khi đăng nhập thành công
+        console.log("Google Token:", token);
+    
+        try {
+            const res = await fetch('https://your-api-url/api/authentication/google-login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: { token }, // Gửi token này tới server của bạn thông qua API
+            });
+    
+            const data = await res.json();
+    
+            if (res.ok) {
+                console.log('Login successful:', data);
+                toast.success('Login Successfully')
+                // Tiếp tục xử lý tại đây sau khi đăng nhập thành công
+            } else {
+                console.error('Backend error:', data);
                 toast.error('Login Failed')
+                throw new Error(data.message || 'Google login failed');
             }
+        } catch (error) {
+            console.error('Error during login:', error);
+            toast.error('Login Failed')
+            // Xử lý lỗi nếu có
         }
-    })
+    };
 
     return (
         <div className={`container ${!isLogin ? 'active' : ''}`} id="container">
@@ -145,8 +152,14 @@ const Login = () => {
                     <form onSubmit={handleLogin}>
                         <h1>LOG IN</h1>
                         <div className="social-icons">
-                            <a href="#" onClick={() => loginGoogle()} className="icon" style={{ color: "red" }}><FaGoogle /></a>
-                            <a href="#" className="icon" style={{ color: "blue" }}><FaFacebookF /></a>
+                            <GoogleLogin
+                                onSuccess={loginGoogle}
+                                onError={() => {
+                                    console.log('Login Failed');
+                                    toast.error('Google login failed');
+                                }}
+                            />
+                            {/* <a href="#" className="icon" style={{ color: "blue" }}><FaFacebookF /></a> */}
                         </div>
                         <span>or use your account for login</span>
                         <input
